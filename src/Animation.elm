@@ -134,35 +134,54 @@ module Animation
         , attr4
         , attrColor
         , exactly
+        , important
         )
 
 {-| A library for animations.
 
+
 # Setting up an animation
+
 @docs State, subscription, Msg, render
 
+
 # Creating an animation
+
 @docs interrupt, queue, Step, wait, to, toWith, toWithEach, set, repeat, loop, update, style, styleWith, styleWithEach, Interpolation, spring, easing, speed
 
+
 # Animatable Properties
+
 @docs Property, opacity, Length, top, left, right, bottom, width, height, padding, paddingLeft, paddingRight, paddingTop, paddingBottom, margin, marginLeft, marginRight, marginTop, marginBottom, color, backgroundColor, borderColor, borderWidth, borderLeftWidth, borderRightWidth, borderTopWidth, borderBottomWidth, borderRadius, borderTopLeftRadius, borderTopRightRadius, borderBottomLeftRadius, borderBottomRightRadius, shadow, textShadow, insetShadow, display, inline, inlineBlock, flex, inlineFlex, block, none, listItem
 
+
 # Transforms
+
 @docs scale, scale3d, Angle, rotate, rotate3d, translate, translate3d, transformOrigin
 
+
 # Animatable CSS Filters
+
 @docs filterUrl, blur, brightness, contrast, grayscale, greyscale, hueRotate, invert, saturate, sepia, dropShadow
 
+
 # Animatable Svg Properties
+
 @docs viewBox, fill, stroke, strokeWidth, stopColor, offset, x, y, cx, cy, radius, radiusX, radiusY, points
 
+
 # Constructing an Svg Path
-@docs path, PathStep, move, moveTo, line, lineTo, horizontal, horizontalTo, vertical, verticalTo,  close, QuadraticCurve, curve, curveTo, CubicCurve, curve2, curve2To, arc, Arc
+
+@docs path, PathStep, move, moveTo, line, lineTo, horizontal, horizontalTo, vertical, verticalTo, close, QuadraticCurve, curve, curveTo, CubicCurve, curve2, curve2To, arc, Arc
+
 
 # Units
+
 @docs px, percent, em, rem, turn, deg, grad, rad
 
+
 # Advanced
+
 @docs exactly, custom, custom2, customColor, attr, attr2, attr3, attr4, attrColor
 
 -}
@@ -175,7 +194,7 @@ import Animation.Model exposing (..)
 import Animation.Render
 
 
-{-| _Note_ - The compiler will refer to your `Animation.State` as `Animation.Model.Animation msg`
+{-| *Note* - The compiler will refer to your `Animation.State` as `Animation.Model.Animation msg`
 -}
 type alias State =
     Animation.Model.Animation Never
@@ -212,7 +231,7 @@ type alias Step =
 --------------------------
 
 
-{-| Specify a custom Spring to animate with.  To be used in conjunction with `StyleWith`, `StyleWithEach`, `toWith`, and `toWithEach`.
+{-| Specify a custom Spring to animate with. To be used in conjunction with `StyleWith`, `StyleWithEach`, `toWith`, and `toWithEach`.
 
 This should be your preferred interpolation to use.
 
@@ -222,7 +241,7 @@ spring settings =
     Spring settings
 
 
-{-| Specify a custom Easing to animate with.  To be used in conjunction with `StyleWith`, `StyleWithEach`, `toWith`, and `toWithEach`.
+{-| Specify a custom Easing to animate with. To be used in conjunction with `StyleWith`, `StyleWithEach`, `toWith`, and `toWithEach`.
 
 The [elm-community/easing-functions](https://github.com/elm-community/easing-functions) package has a bunch of useful easing functions!
 
@@ -237,9 +256,9 @@ easing { duration, ease } =
         }
 
 
-{-| Specify a speed to animate with.  To be used in conjunction with `StyleWith`, `StyleWithEach`, `toWith`, and `toWithEach`.
+{-| Specify a speed to animate with. To be used in conjunction with `StyleWith`, `StyleWithEach`, `toWith`, and `toWithEach`.
 
-Generally you don't want this.  It's used in the special case of the default interpolation for rotation.
+Generally you don't want this. It's used in the special case of the default interpolation for rotation.
 
 Use `Animation.spring` or `Animation.easing` instead as they are more powerful.
 
@@ -259,9 +278,7 @@ setDefaultInterpolation prop =
         mapToMotion (\m -> { m | interpolation = interp }) prop
 
 
-{-|
-
--}
+{-| -}
 defaultInterpolationByProperty : Animation.Model.Property -> Animation.Model.Interpolation
 defaultInterpolationByProperty prop =
     let
@@ -315,6 +332,9 @@ defaultInterpolationByProperty prop =
             Path _ ->
                 spring
 
+            Important prop ->
+                defaultInterpolationByProperty prop
+
 
 
 --------------------
@@ -329,7 +349,6 @@ wait till =
 
 
 {-| Animate to a set of target values, using the default interpolation.
-
 -}
 to : List Animation.Model.Property -> Animation.Model.Step msg
 to props =
@@ -410,7 +429,6 @@ style props =
 
 
 {-| Set an initial style for an animation and override the standard default for interpolation.
-
 -}
 styleWith : Animation.Model.Interpolation -> List Animation.Model.Property -> Animation msg
 styleWith interp props =
@@ -420,6 +438,7 @@ styleWith interp props =
 {-| Set an initial style for an animation and specify the interpolation to be used for each property.
 
 Any property not listed will receive interpolation based on the standard defaults.
+
 -}
 styleWithEach : List ( Animation.Model.Interpolation, Animation.Model.Property ) -> Animation msg
 styleWithEach props =
@@ -431,7 +450,6 @@ styleWithEach props =
 
 
 {-| Add an animation to the queue, execiting once the current animation finishes
-
 -}
 queue : List (Animation.Model.Step msg) -> Animation msg -> Animation msg
 queue steps (Animation model) =
@@ -443,7 +461,6 @@ queue steps (Animation model) =
 
 
 {-| Interrupt any running animations with the following animation.
-
 -}
 interrupt : List (Animation.Model.Step msg) -> Animation msg -> Animation msg
 interrupt steps (Animation model) =
@@ -457,7 +474,6 @@ interrupt steps (Animation model) =
 {-| Sums all leading `Wait` steps and removes them from the animation.
 
 This is used because the wait at the start of an interruption works differently than a normal wait.
-
 
 -}
 extractInitialWait : List (Animation.Model.Step msg) -> ( Time, List (Animation.Model.Step msg) )
@@ -497,8 +513,7 @@ isRunning (Animation model) =
     model.running
 
 
-{-|
--}
+{-| -}
 debug : Animation msg -> List ( String, Motion, Time )
 debug (Animation model) =
     let
@@ -575,6 +590,9 @@ debug (Animation model) =
 
                 Path cmds ->
                     []
+
+                Important prop ->
+                    getValueTuple prop
     in
         List.concatMap getValueTuple model.style
 
@@ -663,14 +681,12 @@ lengthUnitName unit =
             "pc"
 
 
-{-|
--}
+{-| -}
 type Length
     = Length Float LengthUnit
 
 
-{-|
--}
+{-| -}
 type Angle
     = Radians Float
 
@@ -834,38 +850,31 @@ length4 name ( x, len ) ( x2, len2 ) ( x3, len3 ) ( x4, len4 ) =
 
 
 {-| Animate a custom attribute by providing it's name, a float value, and the units it should have.
-
-
 -}
 attr : String -> Float -> String -> Animation.Model.Property
 attr name value unit =
     Animation.Model.Property ("attr:" ++ name) (initMotion value unit)
 
 
-{-|
-
--}
+{-| -}
 attr2 : String -> ( Float, String ) -> ( Float, String ) -> Animation.Model.Property
 attr2 name value1 value2 =
     length2 ("attr:" ++ name) value1 value2
 
 
-{-|
--}
+{-| -}
 attr3 : String -> ( Float, String ) -> ( Float, String ) -> ( Float, String ) -> Animation.Model.Property
 attr3 name value1 value2 value3 =
     length3 ("attr:" ++ name) value1 value2 value3
 
 
-{-|
--}
+{-| -}
 attr4 : String -> ( Float, String ) -> ( Float, String ) -> ( Float, String ) -> ( Float, String ) -> Animation.Model.Property
 attr4 name value1 value2 value3 value4 =
     length4 ("attr:" ++ name) value1 value2 value3 value4
 
 
-{-|
--}
+{-| -}
 attrColor : String -> Color -> Animation.Model.Property
 attrColor name color =
     let
@@ -879,22 +888,20 @@ attrColor name color =
             (initMotion alpha "")
 
 
-{-| Animate a custom _style_ property by providing it's name, a float value, and the units it should have.
+{-| Animate a custom *style* property by providing it's name, a float value, and the units it should have.
 -}
 custom : String -> Float -> String -> Animation.Model.Property
 custom name value unit =
     Animation.Model.Property name (initMotion value unit)
 
 
-{-|
--}
+{-| -}
 custom2 : String -> ( Float, String ) -> ( Float, String ) -> Animation.Model.Property
 custom2 name value unit =
     length2 name value unit
 
 
-{-|
--}
+{-| -}
 customColor : String -> Color -> Animation.Model.Property
 customColor name color =
     let
@@ -908,15 +915,13 @@ customColor name color =
             (initMotion alpha "")
 
 
-{-| Set a non-numerical to an exact value.  This is generally only used with `Animation.set`.
+{-| Set a non-numerical to an exact value. This is generally only used with `Animation.set`.
 
 For example
 
-```
-Animation.set
-    [ Animation.exactly "border-style" "dashed"
-    ]
-```
+    Animation.set
+        [ Animation.exactly "border-style" "dashed"
+        ]
 
 -}
 exactly : String -> String -> Animation.Model.Property
@@ -1286,7 +1291,7 @@ type alias Shadow =
     }
 
 
-{-| Text shadows will ignore the shadow's `size` value.   This is just one of the bizarre quirks of CSS.
+{-| Text shadows will ignore the shadow's `size` value. This is just one of the bizarre quirks of CSS.
 -}
 textShadow : Shadow -> Animation.Model.Property
 textShadow shade =
@@ -1396,15 +1401,14 @@ radiusY ry =
     custom "ry" ry ""
 
 
-{-| To be used with the svg path element.  Renders as the d property.
+{-| To be used with the svg path element. Renders as the d property.
 -}
 path : List PathCommand -> Animation.Model.Property
 path commands =
     Path commands
 
 
-{-|
--}
+{-| -}
 move : Float -> Float -> PathCommand
 move x y =
     Move (initMotion x "") (initMotion y "")
@@ -1469,7 +1473,6 @@ type alias QuadraticCurve =
 
 {-| Create a relative Curve with 2 control points and a target point.
 This is a Cubic Curve in the svg spec.
-
 -}
 curve2 : CubicCurve -> PathCommand
 curve2 { control1, control2, point } =
@@ -1491,7 +1494,6 @@ curve2 { control1, control2, point } =
 
 {-| Create an absolute Curve with 2 control points and a target point.
 This is a Cubic Curve in the svg spec.
-
 -}
 curve2To : CubicCurve -> PathCommand
 curve2To { control1, control2, point } =
@@ -1556,8 +1558,7 @@ type alias Arc =
     }
 
 
-{-|
--}
+{-| -}
 arc : Arc -> PathCommand
 arc arc =
     if arc.clockwise then
@@ -1620,7 +1621,7 @@ grayscale x =
     custom "grayscale" x "%"
 
 
-{-| Create a CSS grayscale filter, these stack with other filters.  This is a spelling adjusment.
+{-| Create a CSS grayscale filter, these stack with other filters. This is a spelling adjusment.
 -}
 greyscale : Float -> Animation.Model.Property
 greyscale x =
@@ -1655,7 +1656,7 @@ sepia x =
     custom "sepia" x "%"
 
 
-{-| Drop shadows will ignore the shadow's `size` value.   This is just one of the bizarre quirks of CSS.
+{-| Drop shadows will ignore the shadow's `size` value. This is just one of the bizarre quirks of CSS.
 -}
 dropShadow : Shadow -> Animation.Model.Property
 dropShadow shade =
@@ -1720,7 +1721,7 @@ stopColor color =
     customColor "stop-color" color
 
 
-{-| Used for svg gradients.  Accepts a number between 0 and 1.
+{-| Used for svg gradients. Accepts a number between 0 and 1.
 -}
 offset : Float -> Animation.Model.Property
 offset value =
@@ -1730,6 +1731,7 @@ offset value =
 {-| Given two lists of coordinates, rotate the list so that the lowest coordinate is first.
 
 This is to align polygon coordinates so that they can morph smoothely into each other.
+
 -}
 alignStartingPoint : List ( Float, Float ) -> List ( Float, Float )
 alignStartingPoint points =
@@ -1776,7 +1778,13 @@ alignStartingPoint points =
 Combine "transform" based properties into a single css property.
 
 Combine "filter" based properties into a single css property.
+
 -}
 render : Animation msgA -> List (Html.Attribute msgB)
 render =
     Animation.Render.render
+
+
+important : Animation.Model.Property -> Animation.Model.Property
+important =
+    Important

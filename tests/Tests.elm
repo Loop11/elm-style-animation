@@ -6,7 +6,6 @@ import Animation
 import Animation.Model
 import Animation.Render
 import Time exposing (..)
-import Ease
 
 
 (=>) =
@@ -31,7 +30,7 @@ all =
                         |> fastforward (1000 * millisecond)
                         |> Animation.Render.renderValues
                         |> Tuple.first
-                        |> Expect.equal [ "opacity" => "1" ]
+                        |> Expect.equal [ "opacity" => "0.9832" ]
             , test "Steps After Repeat" <|
                 \() ->
                     toRepeatTo

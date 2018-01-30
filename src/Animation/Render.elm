@@ -1,11 +1,11 @@
 module Animation.Render exposing (..)
 
 {-| The actual internals of rendering
-
 -}
 
 import Html
 import Html.Attributes
+import Json.Encode
 import Svg.Attributes
 import Animation.Model exposing (..)
 
@@ -91,9 +91,23 @@ render animation =
             renderValues animation
 
         styleAttr =
-            Html.Attributes.style <|
-                List.concatMap prefix style
+            Html.Attributes.property "style" <|
+                Json.Encode.string <|
+                    List.foldr
+                        (\( name, value ) acc ->
+                            case acc of
+                                "" ->
+                                    name ++ ":" ++ value
 
+                                _ ->
+                                    acc ++ ";" ++ name ++ ":" ++ value
+                        )
+                        ""
+                    <|
+                        List.concatMap prefix style
+
+        -- Html.Attributes.style <|
+        --     List.concatMap prefix style
         otherAttrs =
             List.filterMap renderAttrs attrProps
     in
@@ -146,6 +160,9 @@ renderAttrs prop =
                     Just <| Svg.Attributes.viewBox <| propertyValue prop " "
                 else
                     Nothing
+
+            Important prop ->
+                renderAttrs prop
 
             _ ->
                 Nothing
@@ -270,6 +287,9 @@ isAttr prop =
             Property4 name _ _ _ _ ->
                 name == "viewBox"
 
+            Important prop ->
+                isAttr prop
+
             _ ->
                 False
 
@@ -370,6 +390,10 @@ propertyValue prop delim =
         Path cmds ->
             String.join " " <|
                 List.map pathCmdValue cmds
+
+        Important prop ->
+            propertyValue prop delim
+                ++ " !important"
 
 
 pathCmdValue : PathCommand -> String
@@ -630,12 +654,12 @@ They were copied because there were version number issues
 when the version this library was using and the version
 the user was using got out of sync.
 
-
 Group elements together, using a custom equality test.
-    groupWhile (\x y -> first x == first y) [(0,'a'),(0,'b'),(1,'c'),(1,'d')] == [[(0,'a'),(0,'b')],[(1,'c'),(1,'d')]]
+groupWhile (\x y -> first x == first y) [(0,'a'),(0,'b'),(1,'c'),(1,'d')] == [[(0,'a'),(0,'b')],[(1,'c'),(1,'d')]]
 The equality test should be an equivalent relationship, i.e. it should have the properties of reflexivity, symmetry, and transitivity. For non-equivalent relations it gives non-intuitive behavior:
-    groupWhile (<) [1,2,3,2,4,1,3,2,1] == [[1,2,3,2,4],[1,3,2],[1]]
+groupWhile (<) [1,2,3,2,4,1,3,2,1] == [[1,2,3,2,4],[1,3,2],[1]]
 For grouping elements with a comparison test, which must only hold the property of transitivity, see `groupWhileTransitively`.
+
 -}
 groupWhile : (a -> a -> Bool) -> List a -> List (List a)
 groupWhile eq xs_ =
@@ -652,9 +676,9 @@ groupWhile eq xs_ =
 
 
 {-| Take a predicate and a list, return a tuple. The first part of the tuple is the longest prefix of that list, for each element of which the predicate holds. The second part of the tuple is the remainder of the list. `span p xs` is equivalent to `(takeWhile p xs, dropWhile p xs)`.
-    span ((>) 3) [1,2,3,4,1,2,3,4] == ([1,2],[3,4,1,2,3,4])
-    span ((>) 5) [1,2,3] == ([1,2,3],[])
-    span ((>) 0) [1,2,3] == ([],[1,2,3])
+span ((>) 3) [1,2,3,4,1,2,3,4] == ([1,2],[3,4,1,2,3,4])
+span ((>) 5) [1,2,3] == ([1,2,3],[])
+span ((>) 0) [1,2,3] == ([],[1,2,3])
 -}
 span : (a -> Bool) -> List a -> ( List a, List a )
 span p xs =

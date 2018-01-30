@@ -24,9 +24,7 @@ type Tick
     = Tick Time
 
 
-{-|
-
--}
+{-| -}
 type Step msg
     = Step
     | To (List Property)
@@ -65,6 +63,7 @@ type Property
     | AngleProperty String Motion
     | Points (List ( Motion, Motion ))
     | Path (List PathCommand)
+    | Important Property
 
 
 type alias Motion =
@@ -89,7 +88,7 @@ type alias ShadowMotion =
     }
 
 
-{-| Describe a path.  To be used in conjunction with the 'd' property for styling svg.
+{-| Describe a path. To be used in conjunction with the 'd' property for styling svg.
 
 `To` versions of the commands are absolute, while others are relative.
 
@@ -170,6 +169,9 @@ propertyName prop =
 
         Path _ ->
             "path"
+
+        Important prop ->
+            propertyName prop
 
 
 mapToMotion : (Motion -> Motion) -> Property -> Property
@@ -265,6 +267,10 @@ mapToMotion fn prop =
                 List.map
                     (mapPathMotion fn)
                     cmds
+
+        Important prop ->
+            Important <|
+                mapToMotion fn prop
 
 
 mapPathMotion : (Motion -> Motion) -> PathCommand -> PathCommand
@@ -606,8 +612,7 @@ alreadyThere current target =
         |> List.all isDone
 
 
-{-|
--}
+{-| -}
 replaceProps : List Property -> List Property -> List Property
 replaceProps props replacements =
     let
@@ -685,6 +690,9 @@ isDone property =
 
             Path cmds ->
                 List.all isCmdDone cmds
+
+            Important prop ->
+                isDone prop
 
 
 isCmdDone : PathCommand -> Bool
@@ -964,6 +972,15 @@ setTarget overrideInterpolation current newTarget =
                                 setPathTarget
                                 cmds
                                 targets
+
+                    _ ->
+                        current
+
+            Important prop ->
+                case newTarget of
+                    Important importantTarget ->
+                        Important <|
+                            setTarget overrideInterpolation prop importantTarget
 
                     _ ->
                         current
@@ -1387,6 +1404,10 @@ step dt props =
                 Path cmds ->
                     Path <|
                         List.map (stepPath dt) cmds
+
+                Important prop ->
+                    Important <|
+                        stepProp prop
     in
         List.map stepProp props
 
@@ -1532,22 +1553,19 @@ stepPath dt cmd =
                 Close
 
 
-{-|
--}
+{-| -}
 tolerance : Float
 tolerance =
     0.01
 
 
-{-|
--}
+{-| -}
 vTolerance : Float
 vTolerance =
     0.1
 
 
-{-|
--}
+{-| -}
 stepInterpolation : Time -> Motion -> Motion
 stepInterpolation dtms motion =
     let
@@ -1677,7 +1695,6 @@ stepInterpolation dtms motion =
 
 {-| Ensure that two lists of points have the same number
 of points by duplicating the last point of the smaller list.
-
 -}
 matchPoints : List ( Motion, Motion ) -> List ( Motion, Motion ) -> ( List ( Motion, Motion ), List ( Motion, Motion ) )
 matchPoints points1 points2 =
