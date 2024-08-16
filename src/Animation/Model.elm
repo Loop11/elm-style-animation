@@ -504,7 +504,7 @@ refreshTiming now timing =
     in
         { current = now
         , dt =
-            if dt > 34 || timing.current == 0 then
+            if dt > 34 then
                 16.666
             else
                 dt
